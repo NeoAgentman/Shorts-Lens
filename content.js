@@ -1,10 +1,16 @@
 (function () {
-  const SCRIPT_VERSION = "0.1.8";
-  if (window.__ytShortsMeta?.version === SCRIPT_VERSION) return;
-  window.__ytShortsMeta?.cleanup?.();
-  window.__ytShortsMetaLoaded = false;
+  const SCRIPT_VERSION = "0.1.9";
+  const EXTENSION_NAMESPACE = "__shortsLens";
+  const LEGACY_NAMESPACE = "__ytShortsMeta";
+  const CARD_ID = "shorts-lens-card";
+  const LEGACY_CARD_ID = "yt-shorts-meta-card";
 
-  const CARD_ID = "yt-shorts-meta-card";
+  if (window[EXTENSION_NAMESPACE]?.version === SCRIPT_VERSION) return;
+  window[EXTENSION_NAMESPACE]?.cleanup?.();
+  if (window[LEGACY_NAMESPACE] !== window[EXTENSION_NAMESPACE]) {
+    window[LEGACY_NAMESPACE]?.cleanup?.();
+  }
+
   const RETRY_DELAYS = [300, 800, 1500, 2500, 4000, 6500];
   let currentVideoId = null;
   let currentState = null;
@@ -320,7 +326,7 @@
       try {
         return JSON.parse(jsonText);
       } catch (error) {
-        console.warn(`[YouTube Shorts Meta] Failed to parse ${variableName}`, error);
+        console.warn(`[Shorts Lens] Failed to parse ${variableName}`, error);
       }
     }
 
@@ -390,6 +396,8 @@
   }
 
   function ensureCard() {
+    document.getElementById(LEGACY_CARD_ID)?.remove();
+
     let card = document.getElementById(CARD_ID);
     if (card) return card;
 
@@ -514,6 +522,7 @@
     if (!videoId) {
       activeJobId += 1;
       document.getElementById(CARD_ID)?.remove();
+      document.getElementById(LEGACY_CARD_ID)?.remove();
       currentVideoId = null;
       currentState = null;
       clearRetry();
@@ -534,6 +543,7 @@
     if (!videoId) {
       activeJobId += 1;
       document.getElementById(CARD_ID)?.remove();
+      document.getElementById(LEGACY_CARD_ID)?.remove();
       currentVideoId = null;
       currentState = null;
       clearRetry();
@@ -553,6 +563,7 @@
       currentVideoId = videoId;
       currentState = { status: "loading" };
       document.getElementById(CARD_ID)?.remove();
+      document.getElementById(LEGACY_CARD_ID)?.remove();
     } else if (!document.getElementById(CARD_ID) && currentState) {
       renderCard(currentState);
     }
@@ -566,7 +577,7 @@
         renderCard({ status: "ready", ...meta });
       }
     } catch (error) {
-      console.warn("[YouTube Shorts Meta] Failed to load metadata", error);
+      console.warn("[Shorts Lens] Failed to load metadata", error);
       if (videoId !== currentVideoId) return;
 
       if (retryAttempt < RETRY_DELAYS.length) {
@@ -575,6 +586,7 @@
       } else {
         currentState = { status: "missing" };
         document.getElementById(CARD_ID)?.remove();
+        document.getElementById(LEGACY_CARD_ID)?.remove();
       }
     }
   }
@@ -620,13 +632,20 @@
   disposers.push(() => window.removeEventListener("yt-page-data-updated", onPageDataUpdated));
   disposers.push(() => window.removeEventListener("popstate", onPopState));
 
-  window.__ytShortsMeta = {
+  const api = {
     version: SCRIPT_VERSION,
     cleanup() {
       clearRetry();
+      document.getElementById(CARD_ID)?.remove();
+      document.getElementById(LEGACY_CARD_ID)?.remove();
       for (const dispose of disposers) dispose();
+      if (window[EXTENSION_NAMESPACE] === api) delete window[EXTENSION_NAMESPACE];
+      if (window[LEGACY_NAMESPACE] === api) delete window[LEGACY_NAMESPACE];
     }
   };
+
+  window[EXTENSION_NAMESPACE] = api;
+  window[LEGACY_NAMESPACE] = api;
 
   queueUpdate({ delay: 120 });
 })();

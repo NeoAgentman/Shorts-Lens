@@ -4,8 +4,8 @@ async function injectIntoYouTubeTabs() {
   for (const tab of tabs) {
     if (!tab.id) continue;
 
-  chrome.scripting.executeScript({
-    target: { tabId: tab.id },
+    chrome.scripting.executeScript({
+      target: { tabId: tab.id },
       files: ["content.js"],
       world: "MAIN"
     }).catch(() => {

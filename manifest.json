@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "YouTube Shorts Meta",
-  "version": "0.1.8",
-  "description": "Show publish date and view count directly on YouTube Shorts pages.",
+  "name": "Shorts Lens",
+  "version": "0.1.9",
+  "description": "Show YouTube Shorts views and publish dates directly on the Shorts player.",
   "permissions": ["scripting", "tabs"],
   "host_permissions": ["https://www.youtube.com/*"],
   "background": {

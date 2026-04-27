@@ -1,24 +1,80 @@
 # Shorts Lens
 
-Chrome extension for showing YouTube Shorts publish date and view count without opening the Description panel.
+Shorts Lens is a lightweight Chrome extension that shows YouTube Shorts views and publish dates directly on the Shorts player, without opening the hidden Description panel.
 
-## Install
+It is built for creators, researchers, marketers, and everyday YouTube users who want faster access to basic YouTube Shorts metadata while browsing `youtube.com/shorts`.
 
-1. Open `chrome://extensions/`.
-2. Enable `Developer mode`.
-3. Click `Load unpacked`.
-4. Select the extension project folder.
+## Features
+
+- Shows the current Short's view count on the player.
+- Shows the current Short's publish date in `YYYY-MM-DD` format.
+- Formats large view counts as `K`, `M`, or `B`.
+- Works with YouTube Shorts navigation, including scrolling between Shorts.
+- Reads metadata already present in the current YouTube page.
+- Does not call external APIs or upload browsing data.
+
+## Why Shorts Lens?
+
+YouTube hides Shorts views and upload dates inside the Description panel. On desktop, checking those fields usually requires opening the menu, opening Description, then closing the panel again. Shorts Lens keeps the same information visible in a compact overlay while you watch or research Shorts.
+
+Useful search terms this project covers:
+
+- YouTube Shorts views Chrome extension
+- YouTube Shorts publish date extension
+- YouTube Shorts upload date viewer
+- YouTube Shorts metadata overlay
+- Show YouTube Shorts views without opening Description
+
+## Installation
+
+1. Download or clone this repository.
+2. Open `chrome://extensions/` in Chrome.
+3. Enable `Developer mode`.
+4. Click `Load unpacked`.
+5. Select the Shorts Lens project folder.
+6. Open a YouTube Shorts page, for example `https://www.youtube.com/shorts/...`.
 
 ## How It Works
 
-On `https://www.youtube.com/shorts/*`, the content script reads metadata already present in the current Shorts page. It parses current-page script data such as `ytInitialPlayerResponse` and `ytInitialData`, then injects a small metadata card into the Shorts UI.
+Shorts Lens runs as a Manifest V3 content script on YouTube pages. When the current URL is a Shorts page, it asynchronously reads metadata from the active Shorts page data that YouTube has already loaded, then injects a small overlay into the current Shorts player.
 
-Fields used:
+The extension reads from the Shorts page itself. For Shorts loaded by scrolling, it matches page data against the current video ID before rendering, so stale metadata from the previous Short is ignored.
 
-- `videoDetails.viewCount`
-- `microformat.playerMicroformatRenderer.publishDate`
-- `factoidRenderer` entries inside `ytInitialData`
+## Privacy
 
-## Notes
+Shorts Lens is local-only.
 
-This is a DOM-based prototype. YouTube changes its frontend often, so the insertion point may need adjustment over time.
+- It does not collect analytics.
+- It does not send YouTube data to any server.
+- It does not use external APIs.
+- It only reads the active YouTube page in your browser.
+
+## Permissions
+
+Shorts Lens uses the minimum permissions needed for the current implementation:
+
+- `https://www.youtube.com/*`: run on YouTube pages and detect Shorts.
+- `scripting`: inject the content script into YouTube tabs that were already open when the extension starts.
+- `tabs`: find existing YouTube tabs for injection after install or browser startup.
+
+## Limitations
+
+YouTube changes its frontend frequently. Shorts Lens depends on metadata already present in the YouTube Shorts page, so future YouTube UI or data structure changes may require updates.
+
+Some Shorts may briefly show no overlay while YouTube finishes loading the active Short's metadata. The extension retries in the background and renders only after matching data is found for the current video.
+
+## Development
+
+After editing the extension, reload it from `chrome://extensions/`, then refresh any open YouTube tabs.
+
+Useful checks:
+
+```sh
+node --check content.js
+node --check background.js
+python3 -m json.tool manifest.json >/dev/null
+```
+
+## License
+
+No license has been specified yet.
