@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Shorts Lens Records</title>
+    <link rel="stylesheet" href="records.css">
+  </head>
+  <body>
+    <main class="page">
+      <header class="hero">
+        <div>
+          <p class="eyebrow">Shorts Lens</p>
+          <h1>Viral Shorts Records</h1>
+          <p class="subhead">Preview every locally collected Short, open references, and export the list as CSV.</p>
+          <p class="subhead muted">Export uses selected rows when any rows are selected; otherwise it exports the current filtered list.</p>
+        </div>
+        <div class="actions">
+          <button id="refreshButton" type="button">Refresh</button>
+          <button id="exportButton" type="button">Export CSV</button>
+          <button id="clearButton" class="secondary" type="button">Clear</button>
+        </div>
+      </header>
+
+      <section class="toolbar" aria-label="Record filters">
+        <label>
+          <span>Search</span>
+          <input id="searchInput" type="search" placeholder="Title, URL, or date">
+        </label>
+        <label>
+          <span>Sort by</span>
+          <select id="sortSelect">
+            <option value="collectedAt-desc">Collected newest</option>
+            <option value="viewsNumber-desc">Views highest</option>
+            <option value="published-desc">Published newest</option>
+            <option value="title-asc">Title A-Z</option>
+          </select>
+        </label>
+        <div class="summary">
+          <strong id="selectedCount">0</strong>
+          <span>selected</span>
+          <strong id="visibleCount">0</strong>
+          <span>shown</span>
+          <strong id="totalCount">0</strong>
+          <span>total</span>
+        </div>
+      </section>
+
+      <section class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th class="select-col">
+                <input id="selectVisible" type="checkbox" aria-label="Select visible records">
+              </th>
+              <th>Collected</th>
+              <th>Views</th>
+              <th>Published</th>
+              <th>Description</th>
+              <th>Link</th>
+            </tr>
+          </thead>
+          <tbody id="recordsBody"></tbody>
+        </table>
+        <div id="emptyState" class="empty" hidden>
+          <h2>No records yet</h2>
+          <p>Open YouTube Shorts, enable the collector, and matching Shorts will appear here.</p>
+        </div>
+      </section>
+    </main>
+
+    <script src="records.js"></script>
+  </body>
+</html>

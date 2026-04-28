@@ -11,6 +11,11 @@ It is built for creators, researchers, marketers, and everyday YouTube users who
 - Formats large view counts as `K`, `M`, or `B`.
 - Works with YouTube Shorts navigation, including scrolling between Shorts.
 - Reads metadata already present in the current YouTube page.
+- Saves recent viral Shorts locally with configurable age and view thresholds.
+- Deduplicates records by Shorts video ID.
+- Previews all collected Shorts in a full browser tab.
+- Exports selected, filtered, or all local records as CSV.
+- Optionally deletes records automatically after export.
 - Does not call external APIs or upload browsing data.
 
 ## Why Shorts Lens?
@@ -48,6 +53,27 @@ Shorts Lens is local-only.
 - It does not send YouTube data to any server.
 - It does not use external APIs.
 - It only reads the active YouTube page in your browser.
+- Collection records are stored in Chrome local extension storage on the user's device.
+- Exported CSV files are generated locally from stored records.
+
+## Viral Collector
+
+The viral collector is designed for creators who browse Shorts for references and want to automatically save recent viral examples.
+
+When enabled, Shorts Lens saves a Short if it matches the configured rule:
+
+- Default recent window: `7` days
+- Default minimum views: `1,000,000`
+
+Saved CSV fields:
+
+- Collected date
+- Shorts URL
+- Views
+- Published date
+- Video description, based on the page title
+
+Use `Open records` in the extension popup to preview the full local library in a browser tab. The records page supports search, sorting, row selection, opening Shorts links, CSV export, and clearing local records. If no rows are selected, export uses the current filtered list. If rows are selected, export uses only those rows.
 
 ## Permissions
 
@@ -55,6 +81,7 @@ Shorts Lens uses the minimum permissions needed for the current implementation:
 
 - `https://www.youtube.com/*`: run on YouTube pages and detect Shorts.
 - `scripting`: inject the content script into YouTube tabs that were already open when the extension starts.
+- `storage`: save local collector settings and collected Shorts records.
 - `tabs`: find existing YouTube tabs for injection after install or browser startup.
 
 ## Limitations
@@ -71,7 +98,11 @@ Useful checks:
 
 ```sh
 node --check content.js
+node --check bridge.js
+node --check popup.js
+node --check records.js
 node --check background.js
+node --check scripts/generate-icons.js
 python3 -m json.tool manifest.json >/dev/null
 ```
 

@@ -1,5 +1,5 @@
 (function () {
-  const SCRIPT_VERSION = "0.1.9";
+  const SCRIPT_VERSION = "0.2.0";
   const EXTENSION_NAMESPACE = "__shortsLens";
   const LEGACY_NAMESPACE = "__ytShortsMeta";
   const CARD_ID = "shorts-lens-card";
@@ -156,11 +156,19 @@
     if (!viewCount && !publishDate) throw new Error("No metadata found");
 
     return {
+      videoId,
+      url: `https://www.youtube.com/shorts/${videoId}`,
+      title: getCleanPageTitle(),
       viewCount: formatNumber(viewCount),
       publishDate: formatDate(publishDate),
+      viewCountNumber: parseViewCount(viewCount),
       rawViewCount: viewCount,
       rawPublishDate: publishDate
     };
+  }
+
+  function getCleanPageTitle() {
+    return document.title.replace(/\s+-\s+YouTube$/, "").trim();
   }
 
   function extractKnownMeta(source) {
@@ -177,8 +185,6 @@
       source?.data?.endpoint?.reelWatchEndpoint?.unserializedPrefetchData?.playerResponse;
 
     const microformat = player?.microformat?.playerMicroformatRenderer || {};
-    meta.viewCount = player?.videoDetails?.viewCount || microformat.viewCount || null;
-    meta.publishDate = microformat.publishDate || microformat.uploadDate || null;
 
     const panels =
       source?.data?.engagementPanels ||
@@ -188,8 +194,11 @@
       [];
 
     const header = findVideoDescriptionHeader(panels);
-    meta.viewCount ||= extractViewCountFromHeader(header);
-    meta.publishDate ||= normalizeText(header?.publishDate) || null;
+    const headerViewCount = extractViewCountFromHeader(header);
+    const headerPublishDate = normalizeText(header?.publishDate);
+
+    meta.viewCount = headerViewCount || player?.videoDetails?.viewCount || microformat.viewCount || null;
+    meta.publishDate = headerPublishDate || microformat.publishDate || microformat.uploadDate || null;
 
     return meta;
   }
@@ -580,7 +589,9 @@
       const meta = await readMetaAsync(videoId);
       if (jobId === activeJobId && videoId === currentVideoId) {
         clearRetry();
-        renderCard({ status: "ready", ...meta });
+        const readyState = { status: "ready", ...meta };
+        renderCard(readyState);
+        notifyMetadataReady(readyState);
       }
     } catch (error) {
       console.warn("[Shorts Lens] Failed to load metadata", error);
@@ -615,6 +626,19 @@
     });
   }
 
+  function notifyMetadataReady(state) {
+    window.dispatchEvent(new CustomEvent("shorts-lens:metadata", {
+      detail: {
+        videoId: state.videoId,
+        url: state.url,
+        title: state.title,
+        views: state.viewCount,
+        viewsNumber: state.viewCountNumber,
+        published: state.publishDate
+      }
+    }));
+  }
+
   function watchUrlChanges() {
     if (location.href !== lastSeenUrl) {
       lastSeenUrl = location.href;
@@ -628,15 +652,20 @@
   const onNavigateFinish = () => queueUpdate();
   const onPageDataUpdated = () => queueUpdate({ delay: 120 });
   const onPopState = () => queueUpdate();
+  const onCollectorReady = () => {
+    if (currentState?.status === "ready") notifyMetadataReady(currentState);
+  };
 
   window.addEventListener("yt-navigate-finish", onNavigateFinish);
   window.addEventListener("yt-page-data-updated", onPageDataUpdated);
   window.addEventListener("popstate", onPopState);
+  window.addEventListener("shorts-lens:collector-ready", onCollectorReady);
 
   disposers.push(() => clearInterval(intervalId));
   disposers.push(() => window.removeEventListener("yt-navigate-finish", onNavigateFinish));
   disposers.push(() => window.removeEventListener("yt-page-data-updated", onPageDataUpdated));
   disposers.push(() => window.removeEventListener("popstate", onPopState));
+  disposers.push(() => window.removeEventListener("shorts-lens:collector-ready", onCollectorReady));
 
   const api = {
     version: SCRIPT_VERSION,

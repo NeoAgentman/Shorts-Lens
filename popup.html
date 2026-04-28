@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Shorts Lens</title>
+    <link rel="stylesheet" href="popup.css">
+  </head>
+  <body>
+    <main class="panel">
+      <section class="section">
+        <div class="toggle-row">
+          <div>
+            <h2>Viral collector</h2>
+            <p>Save matching Shorts locally while browsing.</p>
+          </div>
+          <label class="switch">
+            <input id="collectorEnabled" type="checkbox">
+            <span></span>
+          </label>
+        </div>
+
+        <div class="field-grid">
+          <label>
+            <span>Recent days</span>
+            <input id="maxAgeDays" type="number" min="1" step="1">
+          </label>
+          <label>
+            <span>Minimum views</span>
+            <input id="minViews" type="number" min="1" step="1000">
+          </label>
+        </div>
+      </section>
+
+      <section class="section">
+        <div class="toggle-row">
+          <div>
+            <h2>Export cleanup</h2>
+            <p>Delete records after they are exported.</p>
+          </div>
+          <label class="switch">
+            <input id="deleteAfterExport" type="checkbox">
+            <span></span>
+          </label>
+        </div>
+      </section>
+
+      <section class="section library">
+        <div class="library-head">
+          <div>
+            <h2>Newest collected</h2>
+            <p><span id="recordCount">0</span> Shorts collected</p>
+          </div>
+          <button id="openRecordsButton" type="button">Open records</button>
+        </div>
+        <ol id="newestRecords" class="record-list"></ol>
+        <p id="emptyRecords" class="empty-records">No records yet.</p>
+      </section>
+    </main>
+
+    <script src="popup.js"></script>
+  </body>
+</html>
