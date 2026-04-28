@@ -58,10 +58,12 @@
   async function maybeCollect(detail) {
     if (!detail?.videoId || !Number.isFinite(detail.viewsNumber)) return;
 
-    const stored = await chrome.storage.local.get([
+    const stored = await safeStorageGet([
       STORAGE_KEYS.settings,
       STORAGE_KEYS.records
     ]);
+    if (!stored) return;
+
     const settings = normalizeSettings(stored[STORAGE_KEYS.settings]);
 
     if (!settings.collectorEnabled) return;
@@ -82,7 +84,39 @@
       records.unshift(nextRecord);
     }
 
-    await chrome.storage.local.set({ [STORAGE_KEYS.records]: records });
+    await safeStorageSet({ [STORAGE_KEYS.records]: records });
+  }
+
+  async function safeStorageGet(keys) {
+    try {
+      return await chrome.storage.local.get(keys);
+    } catch (error) {
+      handleStorageError(error);
+      return null;
+    }
+  }
+
+  async function safeStorageSet(value) {
+    try {
+      await chrome.storage.local.set(value);
+      return true;
+    } catch (error) {
+      handleStorageError(error);
+      return false;
+    }
+  }
+
+  function handleStorageError(error) {
+    if (isExtensionContextInvalidated(error)) {
+      window.removeEventListener("shorts-lens:metadata", onMetadata);
+      return;
+    }
+
+    console.warn("[Shorts Lens] Failed to access extension storage", error);
+  }
+
+  function isExtensionContextInvalidated(error) {
+    return String(error?.message || error).includes("Extension context invalidated");
   }
 
   function dedupeRecords(records) {
