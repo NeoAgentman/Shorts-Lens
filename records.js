@@ -173,7 +173,7 @@ function createSelectCell(record) {
   const checkbox = document.createElement("input");
   checkbox.type = "checkbox";
   checkbox.checked = selectedVideoIds.has(record.videoId);
-  checkbox.setAttribute("aria-label", `Select ${record.title || record.url || record.videoId}`);
+  checkbox.setAttribute("aria-label", `选择 ${record.title || record.url || record.videoId}`);
   checkbox.addEventListener("change", () => {
     if (checkbox.checked) {
       selectedVideoIds.add(record.videoId);
@@ -211,7 +211,7 @@ function createLinkCell(url) {
   link.href = url;
   link.target = "_blank";
   link.rel = "noreferrer";
-  link.textContent = "Open";
+  link.textContent = "打开";
   cell.appendChild(link);
   return cell;
 }
@@ -222,7 +222,7 @@ function escapeCsv(value) {
 }
 
 function recordsToCsv(items) {
-  const header = ["Collected At", "Shorts URL", "Views", "Published", "Video Description"];
+  const header = ["收集时间", "Shorts 链接", "播放量", "发布日期", "视频描述"];
   const rows = items.map((record) => [
     record.collectedAt,
     record.url,

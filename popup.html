@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="zh-CN">
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -11,8 +11,8 @@
       <section class="section">
         <div class="toggle-row">
           <div>
-            <h2>Viral collector</h2>
-            <p>Save matching Shorts locally while browsing.</p>
+            <h2>爆款收集</h2>
+            <p>浏览 Shorts 时自动保存符合规则的视频。</p>
           </div>
           <label class="switch">
             <input id="collectorEnabled" type="checkbox">
@@ -22,11 +22,11 @@
 
         <div class="field-grid">
           <label>
-            <span>Recent days</span>
+            <span>最近天数</span>
             <input id="maxAgeDays" type="number" min="1" step="1">
           </label>
           <label>
-            <span>Minimum views</span>
+            <span>最低播放量</span>
             <input id="minViews" type="number" min="1" step="1000">
           </label>
         </div>
@@ -35,8 +35,8 @@
       <section class="section">
         <div class="toggle-row">
           <div>
-            <h2>Export cleanup</h2>
-            <p>Delete records after they are exported.</p>
+            <h2>导出后清理</h2>
+            <p>导出成功后自动删除本次导出的记录。</p>
           </div>
           <label class="switch">
             <input id="deleteAfterExport" type="checkbox">
@@ -48,13 +48,13 @@
       <section class="section library">
         <div class="library-head">
           <div>
-            <h2>Newest collected</h2>
-            <p><span id="recordCount">0</span> Shorts collected</p>
+            <h2>最新收集</h2>
+            <p>已收集 <span id="recordCount">0</span> 条 Shorts</p>
           </div>
-          <button id="openRecordsButton" type="button">Open records</button>
+          <button id="openRecordsButton" type="button">打开记录</button>
         </div>
         <ol id="newestRecords" class="record-list"></ol>
-        <p id="emptyRecords" class="empty-records">No records yet.</p>
+        <p id="emptyRecords" class="empty-records">暂无记录。</p>
       </section>
     </main>
 

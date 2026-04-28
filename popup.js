@@ -74,7 +74,7 @@ function createRecordItem(record) {
   link.href = record.url;
   link.target = "_blank";
   link.rel = "noreferrer";
-  link.textContent = record.title || record.url || record.videoId || "Untitled Short";
+  link.textContent = record.title || record.url || record.videoId || "未命名 Short";
 
   const meta = document.createElement("span");
   meta.textContent = `${formatViews(record)} · ${record.published || "-"}`;

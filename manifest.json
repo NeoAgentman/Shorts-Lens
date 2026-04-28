@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Shorts Lens",
   "version": "0.2.0",
-  "description": "Show YouTube Shorts views and publish dates, then collect recent viral Shorts locally for creators.",
+  "description": "在 YouTube Shorts 播放页显示播放量和发布日期，并为创作者本地收集近期爆款 Shorts。",
   "icons": {
     "16": "assets/icon-16.png",
     "32": "assets/icon-32.png",
@@ -12,7 +12,7 @@
   "permissions": ["scripting", "storage", "tabs"],
   "host_permissions": ["https://www.youtube.com/*"],
   "action": {
-    "default_title": "Shorts Lens",
+    "default_title": "Shorts Lens 爆款收集器",
     "default_popup": "popup.html",
     "default_icon": {
       "16": "assets/icon-16.png",

@@ -1,100 +1,84 @@
 # Shorts Lens
 
-Shorts Lens is a lightweight Chrome extension that shows YouTube Shorts views and publish dates directly on the Shorts player, without opening the hidden Description panel.
+Shorts Lens 是一个 Chrome 扩展，用于在 YouTube Shorts 播放页直接显示播放量和发布日期，并在本地自动收集近期爆款 Shorts，帮助创作者刷对标、找灵感、沉淀选题素材。
 
-It is built for creators, researchers, marketers, and everyday YouTube users who want faster access to basic YouTube Shorts metadata while browsing `youtube.com/shorts`.
+## 功能
 
-## Features
+- 在 Shorts 播放区域显示当前视频播放量。
+- 显示当前视频发布日期，格式为 `YYYY-MM-DD`。
+- 将大播放量格式化为 `K`、`M`、`B`。
+- 支持 Shorts 上下滑切换。
+- 直接读取当前 Shorts 页面已有数据。
+- 按 Shorts video ID 去重。
+- 按规则自动收集近期爆款 Shorts，默认规则为 7 天内且播放量不少于 1,000,000。
+- 在浏览器标签页中预览所有本地记录。
+- 支持按勾选项、筛选结果或全部记录导出 CSV。
+- 可选择导出后自动删除本次导出的记录。
+- 不调用外部 API，不上传浏览数据。
 
-- Shows the current Short's view count on the player.
-- Shows the current Short's publish date in `YYYY-MM-DD` format.
-- Formats large view counts as `K`, `M`, or `B`.
-- Works with YouTube Shorts navigation, including scrolling between Shorts.
-- Reads metadata already present in the current YouTube page.
-- Saves recent viral Shorts locally with configurable age and view thresholds.
-- Deduplicates records by Shorts video ID.
-- Previews all collected Shorts in a full browser tab.
-- Exports selected, filtered, or all local records as CSV.
-- Optionally deletes records automatically after export.
-- Does not call external APIs or upload browsing data.
+## 安装
 
-## Why Shorts Lens?
+1. 下载或克隆本仓库。
+2. 打开 Chrome 的 `chrome://extensions/`。
+3. 开启 `Developer mode`。
+4. 点击 `Load unpacked`。
+5. 选择本扩展目录。
+6. 打开任意 YouTube Shorts 页面，例如 `https://www.youtube.com/shorts/...`。
 
-YouTube hides Shorts views and upload dates inside the Description panel. On desktop, checking those fields usually requires opening the menu, opening Description, then closing the panel again. Shorts Lens keeps the same information visible in a compact overlay while you watch or research Shorts.
+## 使用
 
-Useful search terms this project covers:
+打开扩展 popup 后，可以设置：
 
-- YouTube Shorts views Chrome extension
-- YouTube Shorts publish date extension
-- YouTube Shorts upload date viewer
-- YouTube Shorts metadata overlay
-- Show YouTube Shorts views without opening Description
+- 是否启用爆款收集。
+- 最近天数。
+- 最低播放量。
+- 是否导出后自动删除记录。
 
-## Installation
+点击 `打开记录` 可进入完整记录页。记录页支持搜索、排序、勾选导出、打开 Shorts 链接、导出 CSV 和清空记录。
 
-1. Download or clone this repository.
-2. Open `chrome://extensions/` in Chrome.
-3. Enable `Developer mode`.
-4. Click `Load unpacked`.
-5. Select the Shorts Lens project folder.
-6. Open a YouTube Shorts page, for example `https://www.youtube.com/shorts/...`.
+导出规则：
 
-## How It Works
+- 如果勾选了记录，只导出勾选记录。
+- 如果没有勾选记录，导出当前筛选结果。
+- 如果开启了导出后清理，只删除本次实际导出的记录。
 
-Shorts Lens runs as a Manifest V3 content script on YouTube pages. When the current URL is a Shorts page, it asynchronously reads metadata from the active Shorts page data that YouTube has already loaded, then injects a small overlay into the current Shorts player.
+CSV 字段：
 
-The extension reads from the Shorts page itself. For Shorts loaded by scrolling, it matches page data against the current video ID before rendering, so stale metadata from the previous Short is ignored.
+- 收集时间
+- Shorts 链接
+- 播放量
+- 发布日期
+- 视频描述
 
-## Privacy
+## 隐私
 
-Shorts Lens is local-only.
+Shorts Lens 是本地优先工具。
 
-- It does not collect analytics.
-- It does not send YouTube data to any server.
-- It does not use external APIs.
-- It only reads the active YouTube page in your browser.
-- Collection records are stored in Chrome local extension storage on the user's device.
-- Exported CSV files are generated locally from stored records.
+- 不采集分析数据。
+- 不把 YouTube 数据发送到任何服务器。
+- 不使用外部 API。
+- 只读取当前浏览器中的 YouTube 页面。
+- 收集记录保存在 Chrome 扩展本地存储中。
+- CSV 文件由浏览器在本地生成。
 
-## Viral Collector
+## 权限说明
 
-The viral collector is designed for creators who browse Shorts for references and want to automatically save recent viral examples.
+- `https://www.youtube.com/*`：在 YouTube 页面运行并识别 Shorts。
+- `scripting`：扩展安装或浏览器启动后，向已经打开的 YouTube 标签页注入脚本。
+- `storage`：保存本地设置和本地收集记录。
+- `tabs`：查找已经打开的 YouTube 标签页。
 
-When enabled, Shorts Lens saves a Short if it matches the configured rule:
+## 限制
 
-- Default recent window: `7` days
-- Default minimum views: `1,000,000`
+YouTube 前端结构经常变化。Shorts Lens 依赖当前 Shorts 页面中已经加载的数据，因此 YouTube 页面结构变化后可能需要更新解析逻辑。
 
-Saved CSV fields:
+部分 Shorts 在页面数据尚未加载完成时可能暂时不显示记录。扩展会在后台重试，并且只有匹配到当前 video ID 后才会渲染或收集。
 
-- Collected date
-- Shorts URL
-- Views
-- Published date
-- Video description, based on the page title
+## 开发
 
-Use `Open records` in the extension popup to preview the full local library in a browser tab. The records page supports search, sorting, row selection, opening Shorts links, CSV export, and clearing local records. If no rows are selected, export uses the current filtered list. If rows are selected, export uses only those rows.
+修改扩展后，在 `chrome://extensions/` 中重新加载扩展，然后刷新已打开的 YouTube 标签页。
 
-## Permissions
-
-Shorts Lens uses the minimum permissions needed for the current implementation:
-
-- `https://www.youtube.com/*`: run on YouTube pages and detect Shorts.
-- `scripting`: inject the content script into YouTube tabs that were already open when the extension starts.
-- `storage`: save local collector settings and collected Shorts records.
-- `tabs`: find existing YouTube tabs for injection after install or browser startup.
-
-## Limitations
-
-YouTube changes its frontend frequently. Shorts Lens depends on metadata already present in the YouTube Shorts page, so future YouTube UI or data structure changes may require updates.
-
-Some Shorts may briefly show no overlay while YouTube finishes loading the active Short's metadata. The extension retries in the background and renders only after matching data is found for the current video.
-
-## Development
-
-After editing the extension, reload it from `chrome://extensions/`, then refresh any open YouTube tabs.
-
-Useful checks:
+常用检查：
 
 ```sh
 node --check content.js
@@ -106,6 +90,12 @@ node --check scripts/generate-icons.js
 python3 -m json.tool manifest.json >/dev/null
 ```
 
-## License
+重新生成图标：
 
-No license has been specified yet.
+```sh
+node scripts/generate-icons.js
+```
+
+## 许可证
+
+暂未指定许可证。
