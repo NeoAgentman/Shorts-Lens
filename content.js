@@ -185,8 +185,6 @@
       source?.data?.endpoint?.reelWatchEndpoint?.unserializedPrefetchData?.playerResponse;
 
     const microformat = player?.microformat?.playerMicroformatRenderer || {};
-    meta.viewCount = player?.videoDetails?.viewCount || microformat.viewCount || null;
-    meta.publishDate = microformat.publishDate || microformat.uploadDate || null;
 
     const panels =
       source?.data?.engagementPanels ||
@@ -196,8 +194,11 @@
       [];
 
     const header = findVideoDescriptionHeader(panels);
-    meta.viewCount ||= extractViewCountFromHeader(header);
-    meta.publishDate ||= normalizeText(header?.publishDate) || null;
+    const headerViewCount = extractViewCountFromHeader(header);
+    const headerPublishDate = normalizeText(header?.publishDate);
+
+    meta.viewCount = headerViewCount || player?.videoDetails?.viewCount || microformat.viewCount || null;
+    meta.publishDate = headerPublishDate || microformat.publishDate || microformat.uploadDate || null;
 
     return meta;
   }

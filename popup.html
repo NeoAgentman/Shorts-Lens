@@ -8,24 +8,7 @@
   </head>
   <body>
     <main class="panel">
-      <header class="header">
-        <div>
-          <h1>Shorts Lens</h1>
-          <p id="statusText">Free mode</p>
-        </div>
-        <span id="statusBadge" class="badge">Free</span>
-      </header>
-
       <section class="section">
-        <label class="label" for="licenseKey">License key</label>
-        <div class="license-row">
-          <input id="licenseKey" type="text" spellcheck="false" placeholder="SL-XXXX-XXXX-XXXX-XXXXXX">
-          <button id="activateButton" type="button">Activate</button>
-        </div>
-        <p id="licenseMessage" class="hint"></p>
-      </section>
-
-      <section class="section pro-section">
         <div class="toggle-row">
           <div>
             <h2>Viral collector</h2>
@@ -49,19 +32,32 @@
         </div>
       </section>
 
+      <section class="section">
+        <div class="toggle-row">
+          <div>
+            <h2>Export cleanup</h2>
+            <p>Delete records after they are exported.</p>
+          </div>
+          <label class="switch">
+            <input id="deleteAfterExport" type="checkbox">
+            <span></span>
+          </label>
+        </div>
+      </section>
+
       <section class="section library">
         <div class="library-head">
           <div>
-            <h2>Local library</h2>
+            <h2>Newest collected</h2>
             <p><span id="recordCount">0</span> Shorts collected</p>
           </div>
-          <button id="exportButton" type="button">Export CSV</button>
+          <button id="openRecordsButton" type="button">Open records</button>
         </div>
-        <button id="clearButton" class="secondary" type="button">Clear records</button>
+        <ol id="newestRecords" class="record-list"></ol>
+        <p id="emptyRecords" class="empty-records">No records yet.</p>
       </section>
     </main>
 
-    <script src="license.js"></script>
     <script src="popup.js"></script>
   </body>
 </html>

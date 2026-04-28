@@ -1,31 +1,26 @@
 const STORAGE_KEYS = {
-  license: "shortsLensLicense",
   settings: "shortsLensSettings",
   records: "shortsLensRecords"
 };
 
 const DEFAULT_SETTINGS = {
   collectorEnabled: false,
+  deleteAfterExport: false,
   maxAgeDays: 7,
   minViews: 1_000_000
 };
 
 const elements = {
-  statusText: document.getElementById("statusText"),
-  statusBadge: document.getElementById("statusBadge"),
-  licenseKey: document.getElementById("licenseKey"),
-  activateButton: document.getElementById("activateButton"),
-  licenseMessage: document.getElementById("licenseMessage"),
   collectorEnabled: document.getElementById("collectorEnabled"),
+  deleteAfterExport: document.getElementById("deleteAfterExport"),
   maxAgeDays: document.getElementById("maxAgeDays"),
   minViews: document.getElementById("minViews"),
   recordCount: document.getElementById("recordCount"),
-  exportButton: document.getElementById("exportButton"),
-  clearButton: document.getElementById("clearButton"),
-  proSection: document.querySelector(".pro-section")
+  newestRecords: document.getElementById("newestRecords"),
+  emptyRecords: document.getElementById("emptyRecords"),
+  openRecordsButton: document.getElementById("openRecordsButton")
 };
 
-let activated = false;
 let saveTimer = null;
 
 function normalizeSettings(settings) {
@@ -37,61 +32,80 @@ function normalizeSettings(settings) {
   };
 }
 
-function isActivated(license) {
-  return Boolean(license?.valid && license?.key);
-}
-
 async function loadState() {
   const stored = await chrome.storage.local.get([
-    STORAGE_KEYS.license,
     STORAGE_KEYS.settings,
     STORAGE_KEYS.records
   ]);
-  const license = stored[STORAGE_KEYS.license];
   const settings = normalizeSettings(stored[STORAGE_KEYS.settings]);
   const records = Array.isArray(stored[STORAGE_KEYS.records]) ? stored[STORAGE_KEYS.records] : [];
 
-  activated = isActivated(license);
-  renderLicense(license);
   renderSettings(settings);
   renderRecords(records);
 }
 
-function renderLicense(license) {
-  elements.statusBadge.textContent = activated ? "Pro" : "Free";
-  elements.statusBadge.classList.toggle("active", activated);
-  elements.statusText.textContent = activated ? "Viral collector unlocked" : "Free mode";
-  elements.licenseKey.value = license?.formattedKey || license?.key || "";
-  elements.licenseMessage.textContent = activated ? "License activated on this browser." : "Activate Pro to enable viral collection.";
-
-  elements.proSection.classList.toggle("pro-locked", !activated);
-  elements.collectorEnabled.disabled = !activated;
-  elements.maxAgeDays.disabled = !activated;
-  elements.minViews.disabled = !activated;
-  elements.exportButton.disabled = !activated;
-  elements.clearButton.disabled = !activated;
-}
-
 function renderSettings(settings) {
   elements.collectorEnabled.checked = Boolean(settings.collectorEnabled);
+  elements.deleteAfterExport.checked = Boolean(settings.deleteAfterExport);
   elements.maxAgeDays.value = settings.maxAgeDays;
   elements.minViews.value = settings.minViews;
 }
 
 function renderRecords(records) {
   elements.recordCount.textContent = String(records.length);
+  elements.newestRecords.textContent = "";
+  elements.emptyRecords.hidden = records.length > 0;
+
+  const newestRecords = [...records]
+    .sort((first, second) => {
+      return (Date.parse(second.collectedAt || "") || 0) - (Date.parse(first.collectedAt || "") || 0);
+    })
+    .slice(0, 5);
+
+  for (const record of newestRecords) {
+    elements.newestRecords.appendChild(createRecordItem(record));
+  }
+}
+
+function createRecordItem(record) {
+  const item = document.createElement("li");
+
+  const link = document.createElement("a");
+  link.href = record.url;
+  link.target = "_blank";
+  link.rel = "noreferrer";
+  link.textContent = record.title || record.url || record.videoId || "Untitled Short";
+
+  const meta = document.createElement("span");
+  meta.textContent = `${formatViews(record)} · ${record.published || "-"}`;
+
+  item.append(link, meta);
+  return item;
+}
+
+function formatViews(record) {
+  const number = Number(record.viewsNumber);
+  if (!Number.isFinite(number)) return record.views || "-";
+  if (number >= 1_000_000_000) return `${trimDecimal(number / 1_000_000_000)}B`;
+  if (number >= 1_000_000) return `${trimDecimal(number / 1_000_000)}M`;
+  if (number >= 1_000) return `${trimDecimal(number / 1_000)}K`;
+  return String(number);
+}
+
+function trimDecimal(value) {
+  return value >= 10 ? String(Math.round(value)) : value.toFixed(1).replace(/\.0$/, "");
 }
 
 function readSettingsFromForm() {
   return normalizeSettings({
     collectorEnabled: elements.collectorEnabled.checked,
+    deleteAfterExport: elements.deleteAfterExport.checked,
     maxAgeDays: elements.maxAgeDays.value,
     minViews: elements.minViews.value
   });
 }
 
 function queueSaveSettings() {
-  if (!activated) return;
   if (saveTimer) clearTimeout(saveTimer);
 
   saveTimer = setTimeout(async () => {
@@ -100,87 +114,12 @@ function queueSaveSettings() {
   }, 180);
 }
 
-async function activateLicense() {
-  elements.activateButton.disabled = true;
-  elements.licenseMessage.textContent = "Checking license...";
-
-  try {
-    const result = await ShortsLensLicense.validateKey(elements.licenseKey.value);
-    if (!result.valid) {
-      await chrome.storage.local.remove(STORAGE_KEYS.license);
-      activated = false;
-      elements.licenseMessage.textContent = "Invalid license key.";
-      await loadState();
-      return;
-    }
-
-    const license = {
-      valid: true,
-      key: result.normalizedKey,
-      formattedKey: result.formattedKey,
-      activatedAt: new Date().toISOString()
-    };
-
-    await chrome.storage.local.set({ [STORAGE_KEYS.license]: license });
-    activated = true;
-    await loadState();
-  } finally {
-    elements.activateButton.disabled = false;
-  }
-}
-
-function escapeCsv(value) {
-  const text = String(value ?? "");
-  return `"${text.replace(/"/g, '""')}"`;
-}
-
-function recordsToCsv(records) {
-  const header = ["Collected At", "Shorts URL", "Views", "Published", "Video Description"];
-  const rows = records.map((record) => [
-    record.collectedAt,
-    record.url,
-    record.viewsNumber || record.views,
-    record.published,
-    record.title
-  ]);
-
-  return [header, ...rows].map((row) => row.map(escapeCsv).join(",")).join("\n");
-}
-
-async function exportCsv() {
-  const stored = await chrome.storage.local.get(STORAGE_KEYS.records);
-  const records = Array.isArray(stored[STORAGE_KEYS.records]) ? stored[STORAGE_KEYS.records] : [];
-  const csv = recordsToCsv(records);
-  const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  const date = new Date().toISOString().slice(0, 10);
-
-  link.href = url;
-  link.download = `shorts-lens-viral-shorts-${date}.csv`;
-  link.click();
-  URL.revokeObjectURL(url);
-}
-
-async function clearRecords() {
-  await chrome.storage.local.set({ [STORAGE_KEYS.records]: [] });
-  renderRecords([]);
-}
-
-elements.activateButton.addEventListener("click", () => {
-  void activateLicense();
-});
-elements.licenseKey.addEventListener("keydown", (event) => {
-  if (event.key === "Enter") void activateLicense();
-});
 elements.collectorEnabled.addEventListener("change", queueSaveSettings);
+elements.deleteAfterExport.addEventListener("change", queueSaveSettings);
 elements.maxAgeDays.addEventListener("input", queueSaveSettings);
 elements.minViews.addEventListener("input", queueSaveSettings);
-elements.exportButton.addEventListener("click", () => {
-  void exportCsv();
-});
-elements.clearButton.addEventListener("click", () => {
-  void clearRecords();
+elements.openRecordsButton.addEventListener("click", () => {
+  void chrome.tabs.create({ url: chrome.runtime.getURL("records.html") });
 });
 
 void loadState();

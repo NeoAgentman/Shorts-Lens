@@ -6,7 +6,6 @@
   window[EXTENSION_NAMESPACE]?.cleanup?.();
 
   const STORAGE_KEYS = {
-    license: "shortsLensLicense",
     settings: "shortsLensSettings",
     records: "shortsLensRecords"
   };
@@ -24,10 +23,6 @@
       maxAgeDays: Math.max(1, Number(settings?.maxAgeDays) || DEFAULT_SETTINGS.maxAgeDays),
       minViews: Math.max(1, Number(settings?.minViews) || DEFAULT_SETTINGS.minViews)
     };
-  }
-
-  function isActivated(license) {
-    return Boolean(license?.valid && license?.key);
   }
 
   function parseDate(value) {
@@ -64,18 +59,16 @@
     if (!detail?.videoId || !Number.isFinite(detail.viewsNumber)) return;
 
     const stored = await chrome.storage.local.get([
-      STORAGE_KEYS.license,
       STORAGE_KEYS.settings,
       STORAGE_KEYS.records
     ]);
-    const license = stored[STORAGE_KEYS.license];
     const settings = normalizeSettings(stored[STORAGE_KEYS.settings]);
 
-    if (!isActivated(license) || !settings.collectorEnabled) return;
+    if (!settings.collectorEnabled) return;
     if (detail.viewsNumber < settings.minViews) return;
     if (!isWithinDays(detail.published, settings.maxAgeDays)) return;
 
-    const records = Array.isArray(stored[STORAGE_KEYS.records]) ? stored[STORAGE_KEYS.records] : [];
+    const records = dedupeRecords(Array.isArray(stored[STORAGE_KEYS.records]) ? stored[STORAGE_KEYS.records] : []);
     const existingIndex = records.findIndex((record) => record.videoId === detail.videoId);
     const nextRecord = toRecord(detail);
 
@@ -90,6 +83,38 @@
     }
 
     await chrome.storage.local.set({ [STORAGE_KEYS.records]: records });
+  }
+
+  function dedupeRecords(records) {
+    const byVideoId = new Map();
+
+    for (const record of records) {
+      const key = record?.videoId || record?.url;
+      if (!key) continue;
+
+      const existing = byVideoId.get(key);
+      if (!existing) {
+        byVideoId.set(key, { ...record });
+        continue;
+      }
+
+      byVideoId.set(key, {
+        ...existing,
+        ...record,
+        collectedAt: existing.collectedAt || record.collectedAt,
+        lastSeenAt: getNewestDate(existing.lastSeenAt, record.lastSeenAt)
+      });
+    }
+
+    return Array.from(byVideoId.values());
+  }
+
+  function getNewestDate(firstValue, secondValue) {
+    const firstTime = Date.parse(firstValue || "");
+    const secondTime = Date.parse(secondValue || "");
+    if (!Number.isFinite(firstTime)) return secondValue || firstValue;
+    if (!Number.isFinite(secondTime)) return firstValue || secondValue;
+    return firstTime >= secondTime ? firstValue : secondValue;
   }
 
   const onMetadata = (event) => {
