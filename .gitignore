@@ -24,6 +24,7 @@ pnpm-debug.log*
 dist/
 build/
 out/
+store-assets/
 *.zip
 *.crx
 *.pem
