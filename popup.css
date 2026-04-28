@@ -15,7 +15,8 @@ body {
 }
 
 button,
-input {
+input,
+select {
   font: inherit;
 }
 
@@ -71,15 +72,19 @@ label span {
   padding: 12px;
 }
 
-input[type="number"] {
+input[type="number"],
+select {
   width: 100%;
   border: 1px solid #d8d8d2;
   border-radius: 7px;
   padding: 9px 10px;
+  background: #fff;
+  color: #1f1f1f;
   outline: none;
 }
 
-input:focus {
+input:focus,
+select:focus {
   border-color: #1f1f1f;
 }
 
@@ -142,6 +147,25 @@ input:focus {
   display: flex;
   flex-direction: column;
   gap: 5px;
+}
+
+.unit-input {
+  position: relative;
+}
+
+.unit-input input {
+  padding-right: 34px;
+}
+
+.unit-input span {
+  position: absolute;
+  top: 50%;
+  right: 11px;
+  transform: translateY(-50%);
+  color: #666;
+  font-size: 12px;
+  font-weight: 700;
+  pointer-events: none;
 }
 
 .record-list {

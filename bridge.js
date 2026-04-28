@@ -17,11 +17,14 @@
   };
 
   function normalizeSettings(settings) {
+    const maxAgeDays = Number(settings?.maxAgeDays);
+    const minViews = Number(settings?.minViews);
+
     return {
       ...DEFAULT_SETTINGS,
       ...(settings || {}),
-      maxAgeDays: Math.max(1, Number(settings?.maxAgeDays) || DEFAULT_SETTINGS.maxAgeDays),
-      minViews: Math.max(1, Number(settings?.minViews) || DEFAULT_SETTINGS.minViews)
+      maxAgeDays: [0, 7, 30].includes(maxAgeDays) ? maxAgeDays : DEFAULT_SETTINGS.maxAgeDays,
+      minViews: Math.max(0, Number.isFinite(minViews) ? minViews : DEFAULT_SETTINGS.minViews)
     };
   }
 
@@ -32,6 +35,8 @@
   }
 
   function isWithinDays(dateText, maxAgeDays) {
+    if (maxAgeDays === 0) return true;
+
     const published = parseDate(dateText);
     if (!published) return false;
 

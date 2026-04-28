@@ -44,11 +44,14 @@ async function loadRecords() {
 }
 
 function normalizeSettings(value) {
+  const maxAgeDays = Number(value?.maxAgeDays);
+  const minViews = Number(value?.minViews);
+
   return {
     ...DEFAULT_SETTINGS,
     ...(value || {}),
-    maxAgeDays: Math.max(1, Number(value?.maxAgeDays) || DEFAULT_SETTINGS.maxAgeDays),
-    minViews: Math.max(1, Number(value?.minViews) || DEFAULT_SETTINGS.minViews)
+    maxAgeDays: [0, 7, 30].includes(maxAgeDays) ? maxAgeDays : DEFAULT_SETTINGS.maxAgeDays,
+    minViews: Math.max(0, Number.isFinite(minViews) ? minViews : DEFAULT_SETTINGS.minViews)
   };
 }
 

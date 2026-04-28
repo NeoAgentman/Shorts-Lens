@@ -23,11 +23,18 @@
         <div class="field-grid">
           <label>
             <span>最近天数</span>
-            <input id="maxAgeDays" type="number" min="1" step="1">
+            <select id="maxAgeDays">
+              <option value="0">不限</option>
+              <option value="7">7 天</option>
+              <option value="30">30 天</option>
+            </select>
           </label>
           <label>
-            <span>最低播放量</span>
-            <input id="minViews" type="number" min="1" step="1000">
+            <span>最低播放量（百万）</span>
+            <div class="unit-input">
+              <input id="minViews" type="number" min="0" step="0.1">
+              <span>M</span>
+            </div>
           </label>
         </div>
       </section>

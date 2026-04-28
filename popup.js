@@ -24,11 +24,14 @@ const elements = {
 let saveTimer = null;
 
 function normalizeSettings(settings) {
+  const maxAgeDays = Number(settings?.maxAgeDays);
+  const minViews = Number(settings?.minViews);
+
   return {
     ...DEFAULT_SETTINGS,
     ...(settings || {}),
-    maxAgeDays: Math.max(1, Number(settings?.maxAgeDays) || DEFAULT_SETTINGS.maxAgeDays),
-    minViews: Math.max(1, Number(settings?.minViews) || DEFAULT_SETTINGS.minViews)
+    maxAgeDays: [0, 7, 30].includes(maxAgeDays) ? maxAgeDays : DEFAULT_SETTINGS.maxAgeDays,
+    minViews: Math.max(0, Number.isFinite(minViews) ? minViews : DEFAULT_SETTINGS.minViews)
   };
 }
 
@@ -47,8 +50,8 @@ async function loadState() {
 function renderSettings(settings) {
   elements.collectorEnabled.checked = Boolean(settings.collectorEnabled);
   elements.deleteAfterExport.checked = Boolean(settings.deleteAfterExport);
-  elements.maxAgeDays.value = settings.maxAgeDays;
-  elements.minViews.value = settings.minViews;
+  elements.maxAgeDays.value = String(settings.maxAgeDays);
+  elements.minViews.value = formatMillionValue(settings.minViews);
 }
 
 function renderRecords(records) {
@@ -96,12 +99,24 @@ function trimDecimal(value) {
   return value >= 10 ? String(Math.round(value)) : value.toFixed(1).replace(/\.0$/, "");
 }
 
+function formatMillionValue(value) {
+  const millionValue = Number(value) / 1_000_000;
+  if (!Number.isFinite(millionValue)) return "1";
+  return millionValue >= 10 ? String(Math.round(millionValue)) : millionValue.toFixed(1).replace(/\.0$/, "");
+}
+
+function parseMillionInput(value) {
+  const millionValue = Number(value);
+  if (!Number.isFinite(millionValue)) return DEFAULT_SETTINGS.minViews;
+  return Math.max(0, Math.round(millionValue * 1_000_000));
+}
+
 function readSettingsFromForm() {
   return normalizeSettings({
     collectorEnabled: elements.collectorEnabled.checked,
     deleteAfterExport: elements.deleteAfterExport.checked,
-    maxAgeDays: elements.maxAgeDays.value,
-    minViews: elements.minViews.value
+    maxAgeDays: Number(elements.maxAgeDays.value),
+    minViews: parseMillionInput(elements.minViews.value)
   });
 }
 
@@ -116,7 +131,7 @@ function queueSaveSettings() {
 
 elements.collectorEnabled.addEventListener("change", queueSaveSettings);
 elements.deleteAfterExport.addEventListener("change", queueSaveSettings);
-elements.maxAgeDays.addEventListener("input", queueSaveSettings);
+elements.maxAgeDays.addEventListener("change", queueSaveSettings);
 elements.minViews.addEventListener("input", queueSaveSettings);
 elements.openRecordsButton.addEventListener("click", () => {
   void chrome.tabs.create({ url: chrome.runtime.getURL("records.html") });
