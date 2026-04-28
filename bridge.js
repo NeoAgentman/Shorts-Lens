@@ -6,6 +6,7 @@
   window[EXTENSION_NAMESPACE]?.cleanup?.();
 
   const STORAGE_KEYS = {
+    overlayPosition: "shortsLensOverlayPosition",
     settings: "shortsLensSettings",
     records: "shortsLensRecords"
   };
@@ -92,7 +93,9 @@
       records.unshift(nextRecord);
     }
 
-    await safeStorageSet({ [STORAGE_KEYS.records]: records });
+    if (await safeStorageSet({ [STORAGE_KEYS.records]: records })) {
+      sendRecords(records);
+    }
   }
 
   async function safeStorageGet(keys) {
@@ -162,15 +165,70 @@
   const onMetadata = (event) => {
     void maybeCollect(event.detail);
   };
+  const onRecordsQuery = () => {
+    void sendRecordsSnapshot();
+  };
+  const onOverlayPositionQuery = () => {
+    void sendOverlayPosition();
+  };
+  const onOverlayPositionSave = (event) => {
+    void saveOverlayPosition(event.detail);
+  };
 
   window.addEventListener("shorts-lens:metadata", onMetadata);
+  window.addEventListener("shorts-lens:records-query", onRecordsQuery);
+  window.addEventListener("shorts-lens:overlay-position-query", onOverlayPositionQuery);
+  window.addEventListener("shorts-lens:overlay-position-save", onOverlayPositionSave);
   window.dispatchEvent(new CustomEvent("shorts-lens:collector-ready"));
 
   window[EXTENSION_NAMESPACE] = {
     version: SCRIPT_VERSION,
     cleanup() {
       window.removeEventListener("shorts-lens:metadata", onMetadata);
+      window.removeEventListener("shorts-lens:records-query", onRecordsQuery);
+      window.removeEventListener("shorts-lens:overlay-position-query", onOverlayPositionQuery);
+      window.removeEventListener("shorts-lens:overlay-position-save", onOverlayPositionSave);
       if (window[EXTENSION_NAMESPACE]?.version === SCRIPT_VERSION) delete window[EXTENSION_NAMESPACE];
     }
   };
+
+  async function sendRecordsSnapshot() {
+    const stored = await safeStorageGet([STORAGE_KEYS.records]);
+    if (!stored) return;
+
+    const records = dedupeRecords(Array.isArray(stored[STORAGE_KEYS.records]) ? stored[STORAGE_KEYS.records] : []);
+    sendRecords(records);
+  }
+
+  function sendRecords(records) {
+    window.dispatchEvent(new CustomEvent("shorts-lens:records", {
+      detail: {
+        videoIds: records.map((record) => record.videoId).filter(Boolean)
+      }
+    }));
+  }
+
+  async function sendOverlayPosition() {
+    const stored = await safeStorageGet([STORAGE_KEYS.overlayPosition]);
+    if (!stored) return;
+
+    window.dispatchEvent(new CustomEvent("shorts-lens:overlay-position", {
+      detail: stored[STORAGE_KEYS.overlayPosition] || null
+    }));
+  }
+
+  async function saveOverlayPosition(position) {
+    if (!position || typeof position !== "object") return;
+
+    const nextPosition = {
+      top: clamp(Number(position.top), 0, 1),
+      right: clamp(Number(position.right), 0, 1)
+    };
+    await safeStorageSet({ [STORAGE_KEYS.overlayPosition]: nextPosition });
+  }
+
+  function clamp(value, min, max) {
+    if (!Number.isFinite(value)) return min;
+    return Math.min(max, Math.max(min, value));
+  }
 })();

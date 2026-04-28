@@ -19,6 +19,8 @@
   let lastSeenUrl = location.href;
   let activeJobId = 0;
   let updateTimer = null;
+  let overlayPosition = null;
+  const collectedVideoIds = new Set();
   const disposers = [];
 
   function getShortsVideoId() {
@@ -435,6 +437,7 @@
       "box-shadow:0 2px 10px rgba(0,0,0,.18)",
       "z-index:999999",
       "pointer-events:auto",
+      "cursor:grab",
       "backdrop-filter:blur(3px)"
     ].join(";");
 
@@ -443,6 +446,8 @@
       const position = getComputedStyle(container).position;
       if (position === "static") container.style.position = "relative";
       container.appendChild(card);
+      applyOverlayPosition(card, container);
+      enableOverlayDrag(card, container);
     } else {
       card.style.cssText += [
         "position:fixed",
@@ -482,6 +487,88 @@
 
       return closeToVideo || (rect.width > 200 && rect.height > 300 && rect.right <= videoRect.right + 8);
     }) || null;
+  }
+
+  function applyOverlayPosition(card, container) {
+    if (!overlayPosition) return;
+
+    const maxTop = Math.max(0, container.clientHeight - card.offsetHeight);
+    const maxRight = Math.max(0, container.clientWidth - card.offsetWidth);
+    card.style.top = `${Math.round(maxTop * clamp(overlayPosition.top, 0, 1))}px`;
+    card.style.right = `${Math.round(maxRight * clamp(overlayPosition.right, 0, 1))}px`;
+  }
+
+  function enableOverlayDrag(card, container) {
+    if (card.dataset.shortsLensDraggable === "true") return;
+    card.dataset.shortsLensDraggable = "true";
+
+    let dragState = null;
+
+    card.addEventListener("pointerdown", (event) => {
+      if (event.button !== 0 || event.target.closest("button")) return;
+
+      const cardRect = card.getBoundingClientRect();
+      dragState = {
+        pointerId: event.pointerId,
+        offsetX: event.clientX - cardRect.left,
+        offsetY: event.clientY - cardRect.top
+      };
+      card.setPointerCapture(event.pointerId);
+      card.style.cursor = "grabbing";
+      event.preventDefault();
+    });
+
+    card.addEventListener("pointermove", (event) => {
+      if (!dragState || event.pointerId !== dragState.pointerId) return;
+      moveOverlay(card, container, event.clientX - dragState.offsetX, event.clientY - dragState.offsetY);
+    });
+
+    card.addEventListener("pointerup", (event) => {
+      if (!dragState || event.pointerId !== dragState.pointerId) return;
+      dragState = null;
+      card.releasePointerCapture(event.pointerId);
+      card.style.cursor = "grab";
+      persistOverlayPosition(card, container);
+    });
+
+    card.addEventListener("pointercancel", (event) => {
+      if (!dragState || event.pointerId !== dragState.pointerId) return;
+      dragState = null;
+      card.style.cursor = "grab";
+    });
+  }
+
+  function moveOverlay(card, container, left, top) {
+    const containerRect = container.getBoundingClientRect();
+    const maxTop = Math.max(0, container.clientHeight - card.offsetHeight);
+    const maxLeft = Math.max(0, container.clientWidth - card.offsetWidth);
+    const nextLeft = clamp(left - containerRect.left, 0, maxLeft);
+    const nextTop = clamp(top - containerRect.top, 0, maxTop);
+
+    card.style.left = "";
+    card.style.top = `${Math.round(nextTop)}px`;
+    card.style.right = `${Math.round(maxLeft - nextLeft)}px`;
+  }
+
+  function persistOverlayPosition(card, container) {
+    const maxTop = Math.max(1, container.clientHeight - card.offsetHeight);
+    const maxRight = Math.max(1, container.clientWidth - card.offsetWidth);
+    const top = parseFloat(card.style.top);
+    const right = parseFloat(card.style.right);
+
+    overlayPosition = {
+      top: clamp(Number.isFinite(top) ? top / maxTop : 0, 0, 1),
+      right: clamp(Number.isFinite(right) ? right / maxRight : 0, 0, 1)
+    };
+
+    window.dispatchEvent(new CustomEvent("shorts-lens:overlay-position-save", {
+      detail: overlayPosition
+    }));
+  }
+
+  function clamp(value, min, max) {
+    if (!Number.isFinite(value)) return min;
+    return Math.min(max, Math.max(min, value));
   }
 
   function renderCard(state) {
@@ -533,39 +620,29 @@
 
     const button = document.createElement("button");
     button.type = "button";
-    button.textContent = "收集";
+    const alreadyCollected = collectedVideoIds.has(state.videoId);
+    button.textContent = alreadyCollected ? "已收集" : "收集";
+    button.disabled = alreadyCollected;
     button.style.cssText = [
       "width:100%",
       "margin-top:2px",
       "border:0",
       "border-radius:6px",
       "padding:5px 7px",
-      "background:rgba(255,255,255,.18)",
       "color:#fff",
       "font:700 12px/16px Roboto, Arial, sans-serif",
-      "cursor:pointer"
+      `cursor:${alreadyCollected ? "default" : "pointer"}`,
+      `background:${alreadyCollected ? "rgba(255,255,255,.28)" : "rgba(255,255,255,.18)"}`
     ].join(";");
     button.addEventListener("click", (event) => {
       event.preventDefault();
       event.stopPropagation();
+      if (button.disabled) return;
+      collectedVideoIds.add(state.videoId);
       notifyMetadataReady(state, { manual: true });
-      showManualCollectFeedback(button);
+      renderCard({ ...state });
     });
     card.appendChild(button);
-  }
-
-  function showManualCollectFeedback(button) {
-    button.textContent = "已收集";
-    button.disabled = true;
-    button.style.cursor = "default";
-    button.style.background = "rgba(255,255,255,.28)";
-
-    setTimeout(() => {
-      button.textContent = "收集";
-      button.disabled = false;
-      button.style.cursor = "pointer";
-      button.style.background = "rgba(255,255,255,.18)";
-    }, 1400);
   }
 
   function queueUpdate(options = {}) {
@@ -676,6 +753,14 @@
     }));
   }
 
+  function queryCollectedRecords() {
+    window.dispatchEvent(new CustomEvent("shorts-lens:records-query"));
+  }
+
+  function queryOverlayPosition() {
+    window.dispatchEvent(new CustomEvent("shorts-lens:overlay-position-query"));
+  }
+
   function watchUrlChanges() {
     if (location.href !== lastSeenUrl) {
       lastSeenUrl = location.href;
@@ -690,19 +775,38 @@
   const onPageDataUpdated = () => queueUpdate({ delay: 120 });
   const onPopState = () => queueUpdate();
   const onCollectorReady = () => {
+    queryCollectedRecords();
+    queryOverlayPosition();
     if (currentState?.status === "ready") notifyMetadataReady(currentState);
+  };
+  const onRecordsUpdated = (event) => {
+    collectedVideoIds.clear();
+    for (const videoId of event.detail?.videoIds || []) collectedVideoIds.add(videoId);
+    if (currentState?.status === "ready") renderCard(currentState);
+  };
+  const onOverlayPositionUpdated = (event) => {
+    overlayPosition = event.detail || null;
+    if (currentState?.status === "ready") {
+      const card = document.getElementById(CARD_ID);
+      const container = findVideoContainer();
+      if (card && container) applyOverlayPosition(card, container);
+    }
   };
 
   window.addEventListener("yt-navigate-finish", onNavigateFinish);
   window.addEventListener("yt-page-data-updated", onPageDataUpdated);
   window.addEventListener("popstate", onPopState);
   window.addEventListener("shorts-lens:collector-ready", onCollectorReady);
+  window.addEventListener("shorts-lens:records", onRecordsUpdated);
+  window.addEventListener("shorts-lens:overlay-position", onOverlayPositionUpdated);
 
   disposers.push(() => clearInterval(intervalId));
   disposers.push(() => window.removeEventListener("yt-navigate-finish", onNavigateFinish));
   disposers.push(() => window.removeEventListener("yt-page-data-updated", onPageDataUpdated));
   disposers.push(() => window.removeEventListener("popstate", onPopState));
   disposers.push(() => window.removeEventListener("shorts-lens:collector-ready", onCollectorReady));
+  disposers.push(() => window.removeEventListener("shorts-lens:records", onRecordsUpdated));
+  disposers.push(() => window.removeEventListener("shorts-lens:overlay-position", onOverlayPositionUpdated));
 
   const api = {
     version: SCRIPT_VERSION,
@@ -719,5 +823,7 @@
   window[EXTENSION_NAMESPACE] = api;
   window[LEGACY_NAMESPACE] = api;
 
+  queryCollectedRecords();
+  queryOverlayPosition();
   queueUpdate({ delay: 120 });
 })();
