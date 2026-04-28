@@ -98,4 +98,4 @@ node scripts/generate-icons.js
 
 ## 许可证
 
-暂未指定许可证。
+MIT License
