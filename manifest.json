@@ -1,14 +1,23 @@
 {
   "manifest_version": 3,
   "name": "Shorts Lens",
-  "version": "0.1.9",
-  "description": "Show YouTube Shorts views and publish dates directly on the Shorts player.",
-  "permissions": ["scripting", "tabs"],
+  "version": "0.2.0",
+  "description": "Show YouTube Shorts views and publish dates, then collect recent viral Shorts locally for creators.",
+  "permissions": ["scripting", "storage", "tabs"],
   "host_permissions": ["https://www.youtube.com/*"],
+  "action": {
+    "default_title": "Shorts Lens",
+    "default_popup": "popup.html"
+  },
   "background": {
     "service_worker": "background.js"
   },
   "content_scripts": [
+    {
+      "matches": ["https://www.youtube.com/*"],
+      "js": ["bridge.js"],
+      "run_at": "document_idle"
+    },
     {
       "matches": ["https://www.youtube.com/*"],
       "js": ["content.js"],
