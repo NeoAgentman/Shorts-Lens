@@ -70,10 +70,13 @@
     if (!stored) return;
 
     const settings = normalizeSettings(stored[STORAGE_KEYS.settings]);
+    const manual = Boolean(detail.manual);
 
-    if (!settings.collectorEnabled) return;
-    if (detail.viewsNumber < settings.minViews) return;
-    if (!isWithinDays(detail.published, settings.maxAgeDays)) return;
+    if (!manual) {
+      if (!settings.collectorEnabled) return;
+      if (detail.viewsNumber < settings.minViews) return;
+      if (!isWithinDays(detail.published, settings.maxAgeDays)) return;
+    }
 
     const records = dedupeRecords(Array.isArray(stored[STORAGE_KEYS.records]) ? stored[STORAGE_KEYS.records] : []);
     const existingIndex = records.findIndex((record) => record.videoId === detail.videoId);

@@ -434,7 +434,7 @@
       "font:500 12px/1.25 Roboto, Arial, sans-serif",
       "box-shadow:0 2px 10px rgba(0,0,0,.18)",
       "z-index:999999",
-      "pointer-events:none",
+      "pointer-events:auto",
       "backdrop-filter:blur(3px)"
     ].join(";");
 
@@ -530,6 +530,42 @@
       block.append(label, value);
       card.appendChild(block);
     }
+
+    const button = document.createElement("button");
+    button.type = "button";
+    button.textContent = "收集";
+    button.style.cssText = [
+      "width:100%",
+      "margin-top:2px",
+      "border:0",
+      "border-radius:6px",
+      "padding:5px 7px",
+      "background:rgba(255,255,255,.18)",
+      "color:#fff",
+      "font:700 12px/16px Roboto, Arial, sans-serif",
+      "cursor:pointer"
+    ].join(";");
+    button.addEventListener("click", (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      notifyMetadataReady(state, { manual: true });
+      showManualCollectFeedback(button);
+    });
+    card.appendChild(button);
+  }
+
+  function showManualCollectFeedback(button) {
+    button.textContent = "已收集";
+    button.disabled = true;
+    button.style.cursor = "default";
+    button.style.background = "rgba(255,255,255,.28)";
+
+    setTimeout(() => {
+      button.textContent = "收集";
+      button.disabled = false;
+      button.style.cursor = "pointer";
+      button.style.background = "rgba(255,255,255,.18)";
+    }, 1400);
   }
 
   function queueUpdate(options = {}) {
@@ -626,7 +662,7 @@
     });
   }
 
-  function notifyMetadataReady(state) {
+  function notifyMetadataReady(state, options = {}) {
     window.dispatchEvent(new CustomEvent("shorts-lens:metadata", {
       detail: {
         videoId: state.videoId,
@@ -634,7 +670,8 @@
         title: state.title,
         views: state.viewCount,
         viewsNumber: state.viewCountNumber,
-        published: state.publishDate
+        published: state.publishDate,
+        manual: Boolean(options.manual)
       }
     }));
   }
