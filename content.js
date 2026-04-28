@@ -250,7 +250,6 @@
     let found = false;
     let count = 0;
     walk(source, (node) => {
-      if (found || count > 15000) return;
       count += 1;
       if (
         node.videoId === videoId ||
@@ -258,7 +257,10 @@
         node.reelWatchEndpoint?.videoId === videoId
       ) {
         found = true;
+        return true;
       }
+
+      return count > 15000;
     }, 15000);
 
     return found;
@@ -340,7 +342,7 @@
     };
 
     walk(initialData, (node) => {
-      if (meta.viewCount && meta.publishDate) return;
+      if (meta.viewCount && meta.publishDate) return true;
 
       const videoViewCount = node.videoViewCountRenderer;
       if (!meta.viewCount && videoViewCount) {
@@ -370,6 +372,8 @@
       if (!meta.publishDate && factoid?.accessibilityText && /\b\d{4}\b/.test(factoid.accessibilityText)) {
         meta.publishDate = factoid.accessibilityText;
       }
+
+      return Boolean(meta.viewCount && meta.publishDate);
     });
 
     return meta;
@@ -380,16 +384,18 @@
     let count = 0;
 
     function step(node) {
-      if (!node || typeof node !== "object" || seen.has(node) || count > maxNodes) return;
+      if (!node || typeof node !== "object" || seen.has(node) || count > maxNodes) return false;
       seen.add(node);
       count += 1;
 
-      visit(node);
+      if (visit(node) === true) return true;
 
       const children = Array.isArray(node) ? node : Object.values(node);
       for (const child of children) {
-        if (typeof child !== "function") step(child);
+        if (typeof child !== "function" && step(child)) return true;
       }
+
+      return false;
     }
 
     step(value);
